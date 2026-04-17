@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: notas-solucoes-eventos
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        value: solucoes_eventos_2024
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: DRIVE_FOLDER_ID
+        value: 1GJRkSySrYFxCIxV8mOctxDc7HDG29Y_g
