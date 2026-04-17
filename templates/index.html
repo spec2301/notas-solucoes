@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Soluções Eventos — Gerar Nota</title>
+  <style>
+    :root {
+      --gold:   #f5a623;
+      --dark:   #1a1a1a;
+      --card:   #ffffff;
+      --bg:     #f4f4f4;
+      --border: #e0e0e0;
+      --text:   #333;
+      --sub:    #777;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--dark);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+    header .info h1 { color: #fff; font-size: 17px; font-weight: 700; }
+    header .info p  { color: var(--gold); font-size: 12px; }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s;
+      background: #fff;
+    }
+    .field input:focus, .field select:focus { border-color: var(--gold); }
+
+    /* Itens */
+    #itens-lista { display: flex; flex-direction: column; gap: 10px; }
+    .item-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #fafafa;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .item-row input {
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      outline: none;
+      padding: 4px 0;
+    }
+    .item-row .nome  { flex: 3; border-right: 1px solid var(--border); padding-right: 10px; }
+    .item-row .valor { flex: 2; border-right: 1px solid var(--border); padding: 4px 10px; text-align: center; }
+    .item-row .qtd   { flex: 1; text-align: center; }
+    .item-row .del   {
+      background: none; border: none; cursor: pointer;
+      color: #ccc; font-size: 18px; padding: 0 4px;
+      transition: color .2s;
+    }
+    .item-row .del:hover { color: #e74c3c; }
+
+    .btn-add {
+      width: 100%;
+      padding: 11px;
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      background: none;
+      color: var(--sub);
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all .2s;
+    }
+    .btn-add:hover { border-color: var(--gold); color: var(--gold); }
+
+    .total-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--dark);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .total-box span { color: #aaa; font-size: 13px; }
+    .total-box strong { color: var(--gold); font-size: 20px; font-weight: 700; }
+
+    .btn-gerar {
+      width: 100%;
+      padding: 16px;
+      background: var(--gold);
+      color: var(--dark);
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      margin-top: 4px;
+    }
+    .btn-gerar:hover    { opacity: 0.9; }
+    .btn-gerar:active   { transform: scale(0.98); }
+    .btn-gerar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 12px 24px; border-radius: 50px;
+      font-size: 14px; display: none; z-index: 999; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    #toast.show { display: block; animation: fadeInUp .3s ease; }
+    #toast.erro { background: #e74c3c; }
+    #toast.ok   { background: #27ae60; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* Labels itens */
+    .itens-header {
+      display: flex;
+      gap: 8px;
+      padding: 0 12px;
+      margin-bottom: 4px;
+    }
+    .itens-header span { font-size: 11px; color: var(--sub); font-weight: 600; text-transform: uppercase; }
+    .itens-header .n  { flex: 3; }
+    .itens-header .v  { flex: 2; text-align: center; }
+    .itens-header .q  { flex: 1; text-align: center; }
+    .itens-header .d  { width: 30px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="/static/logo.jpg" alt="Logo"/>
+  <div class="info">
+    <h1>Soluções Eventos</h1>
+    <p>Gerar Nota de Fechamento</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Cliente & Evento -->
+  <div class="card">
+    <h2>📋 Dados do Evento</h2>
+    <div class="field"><label>Cliente</label><input id="cliente" type="text" placeholder="Nome completo do cliente"/></div>
+    <div class="row">
+      <div class="field"><label>Evento</label><input id="evento" type="text" placeholder="Ex: Samba do Tio Binha"/></div>
+      <div class="field"><label>Local</label><input id="local" type="text" placeholder="Ex: Quadra da São Clemente"/></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Data do Evento</label><input id="data" type="text" placeholder="DD/MM/AAAA"/></div>
+      <div class="field"><label>Nº Evento</label><input id="num_evento" type="text" placeholder="Ex: 130"/></div>
+    </div>
+  </div>
+
+  <!-- Itens -->
+  <div class="card">
+    <h2>🛒 Itens do Pedido</h2>
+    <div class="itens-header">
+      <span class="n">Produto</span>
+      <span class="v">Valor unit.</span>
+      <span class="q">Qtd</span>
+      <span class="d"></span>
+    </div>
+    <div id="itens-lista"></div>
+    <button class="btn-add" onclick="addItem()">+ Adicionar item</button>
+    <div class="total-box">
+      <span>Total</span>
+      <strong id="total-display">R$ 0,00</strong>
+    </div>
+  </div>
+
+  <!-- Pagamento -->
+  <div class="card">
+    <h2>💳 Pagamento</h2>
+    <div class="row">
+      <div class="field"><label>Vencimento</label><input id="vencimento" type="text" placeholder="DD/MM/AAAA"/></div>
+      <div class="field">
+        <label>Forma de Pagamento</label>
+        <select id="forma_pagamento">
+          <option>PIX</option>
+          <option>Dinheiro</option>
+          <option>Cartão de Crédito</option>
+          <option>Cartão de Débito</option>
+          <option>Transferência</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-gerar" id="btn-gerar" onclick="gerarNota()">⚡ Gerar Nota de Fechamento</button>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // Formatar data automaticamente
+  function fmtData(input) {
+    input.addEventListener("input", e => {
+      let v = e.target.value.replace(/\D/g, "");
+      if (v.length >= 3) v = v.slice(0,2) + "/" + v.slice(2);
+      if (v.length >= 6) v = v.slice(0,5) + "/" + v.slice(5,9);
+      e.target.value = v;
+    });
+  }
+  fmtData(document.getElementById("data"));
+  fmtData(document.getElementById("vencimento"));
+
+  // Número do pedido automático
+  document.getElementById("num_evento").addEventListener("input", e => {
+    // nothing needed, pedido = num_evento + "-1" in backend
+  });
+
+  let contadorItem = 0;
+
+  function addItem(nome="", valor="", qtd="") {
+    contadorItem++;
+    const id = contadorItem;
+    const div = document.createElement("div");
+    div.className = "item-row";
+    div.id = `item-${id}`;
+    div.innerHTML = `
+      <input class="nome"  type="text"   placeholder="Nome do produto" value="${nome}" oninput="calcTotal()"/>
+      <input class="valor" type="text"   placeholder="0,00"  value="${valor}" oninput="calcTotal()"/>
+      <input class="qtd"   type="number" placeholder="0"     value="${qtd}"   min="1" oninput="calcTotal()"/>
+      <button class="del" onclick="removeItem(${id})">✕</button>
+    `;
+    document.getElementById("itens-lista").appendChild(div);
+    calcTotal();
+  }
+
+  function removeItem(id) {
+    const el = document.getElementById(`item-${id}`);
+    if (el) el.remove();
+    calcTotal();
+  }
+
+  function calcTotal() {
+    let total = 0;
+    document.querySelectorAll(".item-row").forEach(row => {
+      const v = parseFloat(row.querySelector(".valor").value.replace(",", ".")) || 0;
+      const q = parseInt(row.querySelector(".qtd").value) || 0;
+      total += v * q;
+    });
+    const fmt = total.toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+    document.getElementById("total-display").textContent = fmt;
+  }
+
+  function showToast(msg, tipo="ok") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = `show ${tipo}`;
+    setTimeout(() => t.className = "", 3500);
+  }
+
+  function getItens() {
+    const itens = [];
+    document.querySelectorAll(".item-row").forEach(row => {
+      const nome  = row.querySelector(".nome").value.trim();
+      const valor = parseFloat(row.querySelector(".valor").value.replace(",", ".")) || 0;
+      const qtd   = parseInt(row.querySelector(".qtd").value) || 0;
+      if (nome && valor > 0 && qtd > 0) {
+        itens.push({ nome, valor_unit: valor, quant: qtd, dias: 1 });
+      }
+    });
+    return itens;
+  }
+
+  async function gerarNota() {
+    const btn = document.getElementById("btn-gerar");
+
+    const cliente     = document.getElementById("cliente").value.trim();
+    const evento      = document.getElementById("evento").value.trim();
+    const local       = document.getElementById("local").value.trim();
+    const data        = document.getElementById("data").value.trim();
+    const num_evento  = document.getElementById("num_evento").value.trim();
+    const vencimento  = document.getElementById("vencimento").value.trim();
+    const forma       = document.getElementById("forma_pagamento").value;
+    const itens       = getItens();
+
+    if (!cliente || !evento || !local || !data || !num_evento || !vencimento) {
+      showToast("⚠️ Preencha todos os campos obrigatórios!", "erro"); return;
+    }
+    if (itens.length === 0) {
+      showToast("⚠️ Adicione pelo menos um item!", "erro"); return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Gerando nota...";
+
+    try {
+      const resp = await fetch("/gerar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente, evento, local, data,
+          num_evento,
+          num_pedido: num_evento + "-1",
+          itens,
+          vencimento,
+          forma_pagamento: forma,
+          num_parcelas: 1,
+        }),
+      });
+
+      const json = await resp.json();
+
+      if (!json.ok) throw new Error(json.erro || "Erro desconhecido");
+
+      // Download automático
+      const link = document.createElement("a");
+      link.href     = `/download/${json.filename}`;
+      link.download = json.filename;
+      link.click();
+
+      let msg = "✅ Nota gerada e baixada!";
+      if (json.drive_link) msg += " Também salva no Drive.";
+      showToast(msg, "ok");
+
+    } catch(e) {
+      showToast("❌ " + e.message, "erro");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "⚡ Gerar Nota de Fechamento";
+    }
+  }
+
+  // Adicionar 2 itens vazios por padrão
+  addItem(); addItem();
+</script>
+</body>
+</html>
